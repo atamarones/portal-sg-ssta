@@ -92,5 +92,3 @@ Este proyecto está bajo la licencia MIT. Consulta el archivo `LICENSE` para má
 
 ---
 
-Este `README.md` proporciona una guía clara para desarrolladores y posibles colaboradores. Si necesitas ajustes o agregar más detalles específicos, dímelo. 🚀
-
