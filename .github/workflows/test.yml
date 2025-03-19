@@ -1,0 +1,41 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: frontend/frontend-app/package-lock.json
+
+    - name: Install dependencies
+      working-directory: frontend/frontend-app
+      run: npm ci
+      
+    - name: Run tests
+      working-directory: frontend/frontend-app
+      run: npm test -- --run
+
+    - name: Run linter
+      working-directory: frontend/frontend-app
+      run: npm run lint || true
+      
+    - name: Run build
+      working-directory: frontend/frontend-app
+      run: npm run build 

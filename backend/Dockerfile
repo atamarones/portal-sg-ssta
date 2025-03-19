@@ -1,19 +1,27 @@
-# Usar una imagen oficial de Node.js
+# Usa una imagen base de Node.js
 FROM node:18
 
-# Establecer el directorio de trabajo
+# Establece el directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias antes del código fuente para aprovechar la caché
-COPY package*.json ./
+# Copia los archivos de configuración
+COPY package.json package-lock.json ./
 
-RUN npm install --production
+# Instala las dependencias
+RUN npm install
 
-# Copiar el resto del código después de instalar dependencias
+# Copia el resto del código fuente
 COPY . .
 
-# Exponer el puerto del backend
+# Generar cliente Prisma
+RUN npx prisma generate
+
+# Expone el puerto del backend
 EXPOSE 3000
 
-# Comando por defecto
-CMD ["node", "server.js"]
+# Script para iniciar la aplicación
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Comando por defecto para iniciar el servidor
+CMD ["/start.sh"]

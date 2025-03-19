@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  frontend-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: >
+      sh -c "npm test -- --run"
+    environment:
+      - NODE_ENV=test
+      - CI=true 

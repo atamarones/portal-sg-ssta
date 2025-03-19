@@ -3,6 +3,10 @@ import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import mongoose from 'mongoose';
+import authRoutes from './routes/authRoutes.js';
+import configRoutes from './routes/configRoutes.js';
+import { verifyConfiguration as verifyEmailConfig } from './src/services/emailService.js';
+import { setupGoogleAuth } from './src/services/googleAuthService.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -16,11 +20,17 @@ async function connectPostgres() {
     await prisma.$connect();
     console.log('✅ Conectado a PostgreSQL con Prisma');
   } catch (error) {
-    console.error('❌ Error al conectar a PostgreSQL:', error);
-    process.exit(1);
+    console.error('❌ Error al conectar a PostgreSQL:', error.message);
+    process.exit(1); // Detener el proceso si no se puede conectar
   }
 }
 connectPostgres();
+
+// Verificar la configuración de correo
+verifyEmailConfig();
+
+// Configurar autenticación con Google
+setupGoogleAuth(app);
 
 // Conectar a MongoDB (para módulos específicos)
 if (process.env.MONGO_URI) {
@@ -31,12 +41,16 @@ if (process.env.MONGO_URI) {
     })
     .then(() => console.log('✅ Conectado a MongoDB'))
     .catch((err) => {
-      console.error('❌ Error al conectar a MongoDB:', err);
-      process.exit(1);
+      console.error('❌ Error al conectar a MongoDB:', err.message);
+      process.exit(1); // Detener el proceso si no se puede conectar
     });
 } else {
   console.warn('⚠️ MONGO_URI no está definida en el entorno. MongoDB no está activo.');
 }
+
+// Rutas de la API
+app.use('/api/auth', authRoutes);
+app.use('/api/config', configRoutes);
 
 app.get('/', (req, res) => res.send('Backend funcionando 🚀'));
 
@@ -63,8 +77,5 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('⚠️ Rechazo de promesa no manejado:', reason);
 });
-
-import authRoutes from './routes/authRoutes.js';
-app.use('/api/auth', authRoutes);
 
 export { prisma };

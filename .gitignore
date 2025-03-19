@@ -1,32 +1,70 @@
-# Node.js (Backend & Frontend)
-node_modules/
-package-lock.json
-.env
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+.nyc_output
+/frontend/frontend-app/coverage
+/frontend/frontend-app/test-results
+/frontend/frontend-app/security-reports
+/security-reports
+/test-results
+/frontend/frontend-app/.vitest
+
+# production
+/build
+/dist
+/frontend/frontend-app/build
+/frontend/frontend-app/dist
+
+# misc
+.DS_Store
 .env.local
-.env.development
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Logs
 logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-debug.log*
-.out
-.vscode/
+security-test-*.log
+rate-limit-logs/
 
-# Build / Dist
-/dist
-/build
-/public/build
-/.next
-/.nuxt
-/out
-/.parcel-cache
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.vs/
+
+# Vitest
+/frontend/frontend-app/.vitest/
+
+# Cache
+.eslintcache
+.stylelintcache
+/.cache
+.vercel
+.next
+.nuxt
+.out
+.parcel-cache
+.temp
+.cache
+.docusaurus
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# dotenv
+.env*.local
 
 # Docker
 docker-compose.override.yml
@@ -39,8 +77,6 @@ Dockerfile*
 *.swp
 
 # Editor / IDE
-.idea/
-.vscode/
 *.suo
 *.ntvs*
 *.njsproj
@@ -56,9 +92,30 @@ dump/
 *.sql
 *.sqlite3
 
-# Misc
-.DS_Store
-Thumbs.db
-
 # Prisma
 prisma/
+
+# Security testing
+jwt-tokens.txt
+temp-credentials/
+csrf-tokens.log
+xss-payloads/
+security-scan-results/
+
+# Análisis y monitoreo
+lighthouse-reports/
+performance-logs/
+bundle-analysis/
+
+# Archivos de sesión
+.sessions/
+.token-cache/
+
+# Archivos temporales de carga
+uploads/temp/
+temp-uploads/
+
+# Backups automáticos
+*-backup-*.sql
+*-backup-*.json
+backups/
