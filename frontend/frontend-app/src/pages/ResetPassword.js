@@ -34,12 +34,12 @@ const ResetPassword = () => {
     try {
       await api.post('/auth/password-reset', resetData);
       setResetSuccess(true);
-      toast.success('¡Contraseña restablecida con éxito!');
     } catch (error) {
-      const errorMessage = 
-        error.response?.data?.message || 'Error al restablecer la contraseña';
-      toast.error(errorMessage);
-      setErrors({ general: errorMessage });
+      console.error('Error al restablecer contraseña:', error);
+      setErrors({ 
+        general: error.response?.data?.message || 
+        'Error al restablecer la contraseña. Por favor, intenta nuevamente.'
+      });
     } finally {
       setIsLoading(false);
       setSubmitting(false);

@@ -7,12 +7,22 @@ import authRoutes from './routes/authRoutes.js';
 import configRoutes from './routes/configRoutes.js';
 import { verifyConfiguration as verifyEmailConfig } from './src/services/emailService.js';
 import { setupGoogleAuth } from './src/services/googleAuthService.js';
+import { configureSecurityMiddleware } from './middleware/securityMiddleware.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 const prisma = new PrismaClient();
 
-app.use(cors());
+// Configuración básica
+app.use(cors({ 
+  origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+  credentials: true 
+}));
 app.use(express.json());
+app.use(cookieParser());
+
+// Aplicar middlewares de seguridad
+configureSecurityMiddleware(app);
 
 // Conectar a PostgreSQL con Prisma
 async function connectPostgres() {

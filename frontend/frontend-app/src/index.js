@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// Importar estilos de Bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/layout.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';

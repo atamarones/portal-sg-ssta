@@ -105,12 +105,13 @@ const Register = () => {
       // Incluir el token de captcha en la solicitud
       userData.captchaToken = captchaToken;
       await api.post('/auth/register', userData);
-      toast.success('Registro exitoso. Ahora puedes iniciar sesión.');
       navigate('/login');
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Error al registrar usuario';
-      toast.error(errorMessage);
-      setErrors({ general: errorMessage });
+      console.error('Error al registrar:', error);
+      setErrors({ 
+        general: error.response?.data?.message || 
+        'Error al registrar usuario. Por favor, intenta nuevamente.'
+      });
     } finally {
       setIsLoading(false);
       setSubmitting(false);

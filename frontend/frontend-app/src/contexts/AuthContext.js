@@ -6,6 +6,9 @@ import { jwtDecode } from 'jwt-decode';
 // Crear el contexto
 const AuthContext = createContext();
 
+// URL base de la API
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
 // Hook personalizado para usar el contexto
 export const useAuth = () => useContext(AuthContext);
 
@@ -24,7 +27,7 @@ export const AuthProvider = ({ children }) => {
       const storedUser = localStorage.getItem('user');
       
       console.log('AuthContext: Verificando token almacenado');
-      console.log('AuthContext: URL base de API:', process.env.REACT_APP_API_URL);
+      console.log('AuthContext: URL base de API:', API_BASE_URL);
       
       if (!storedToken) {
         console.log('AuthContext: No hay token almacenado');
@@ -79,7 +82,7 @@ export const AuthProvider = ({ children }) => {
         // Solo intentar obtener los datos del usuario desde la API si no tenemos datos en localStorage
         try {
           // Verificar qué URL estamos usando para obtener datos
-          const apiUrl = `${process.env.REACT_APP_API_URL || ''}/api/auth/me`;
+          const apiUrl = `${API_BASE_URL}/api/auth/profile`;
           console.log('AuthContext: Solicitando información actualizada del usuario a:', apiUrl);
           
           const response = await axios.get(apiUrl, {
@@ -135,7 +138,7 @@ export const AuthProvider = ({ children }) => {
   const refreshUserData = async (currentToken) => {
     try {
       // Verificar qué URL estamos usando para obtener datos
-      const apiUrl = `${process.env.REACT_APP_API_URL || ''}/api/auth/me`;
+      const apiUrl = `${API_BASE_URL}/api/auth/profile`;
       console.log('AuthContext: Actualizando datos del usuario en segundo plano desde:', apiUrl);
       
       const response = await axios.get(apiUrl, {
@@ -163,10 +166,18 @@ export const AuthProvider = ({ children }) => {
   };
   
   // Iniciar sesión
-  const login = async (credentials) => {
+  const login = async (email, password, captchaToken) => {
     try {
-      console.log('AuthContext: Intentando iniciar sesión con:', credentials.email);
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, credentials);
+      console.log('AuthContext: Intentando iniciar sesión con:', email);
+      console.log('AuthContext: URL de la API:', `${API_BASE_URL}/api/auth/login`);
+      
+      const credentials = {
+        email,
+        password,
+        captchaToken
+      };
+      
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, credentials);
       
       const { token, user } = response.data;
       console.log('AuthContext: Respuesta de login:', { token: !!token, user });
@@ -200,7 +211,7 @@ export const AuthProvider = ({ children }) => {
   // Registrar usuario
   const register = async (userData) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/register`, userData);
+      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, userData);
       
       toast.success('Registro exitoso. Ya puedes iniciar sesión.');
       return true;
@@ -231,7 +242,7 @@ export const AuthProvider = ({ children }) => {
   // Recuperar contraseña
   const forgotPassword = async (email) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/forgot-password`, { email });
+      const response = await axios.post(`${API_BASE_URL}/api/auth/password-reset-request`, { email });
       
       toast.success('Se ha enviado un enlace de recuperación a tu correo electrónico');
       return true;
@@ -245,11 +256,11 @@ export const AuthProvider = ({ children }) => {
   };
   
   // Restablecer contraseña
-  const resetPassword = async (token, password) => {
+  const resetPassword = async (token, newPassword) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/reset-password`, { 
+      const response = await axios.post(`${API_BASE_URL}/api/auth/password-reset`, { 
         token, 
-        password 
+        newPassword 
       });
       
       toast.success('Contraseña restablecida correctamente');
@@ -264,17 +275,16 @@ export const AuthProvider = ({ children }) => {
   };
   
   // Actualizar perfil
-  const updateProfile = async (userData) => {
+  const updateProfile = async (profileData) => {
     try {
-      const response = await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/auth/profile`, 
-        userData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.put(`${API_BASE_URL}/api/auth/profile`, profileData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
-      // Actualizar datos del usuario
-      setUser(response.data);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      // Actualizar datos del usuario en el estado y localStorage
+      const updatedUser = { ...user, ...response.data.user };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       
       toast.success('Perfil actualizado correctamente');
       return true;
@@ -288,11 +298,10 @@ export const AuthProvider = ({ children }) => {
   };
   
   // Cambiar contraseña
-  const changePassword = async (passwords) => {
+  const changePassword = async (currentPassword, newPassword) => {
     try {
-      const response = await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/auth/change-password`, 
-        passwords,
+      const response = await axios.put(`${API_BASE_URL}/api/auth/change-password`, 
+        { currentPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -307,7 +316,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
   
-  // Valores y funciones expuestos por el contexto
+  // Valor del contexto
   const contextValue = {
     user,
     token,
@@ -320,8 +329,9 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     updateProfile,
     changePassword,
+    refreshUserData
   };
-
+  
   return (
     <AuthContext.Provider value={contextValue}>
       {children}

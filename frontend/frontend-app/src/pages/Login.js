@@ -32,10 +32,6 @@ const Login = () => {
     const params = new URLSearchParams(location.search);
     const error = params.get('error');
     
-    if (error) {
-      toast.error('Error al iniciar sesión con Google');
-    }
-    
     // Verificar si Google Auth está habilitado
     const checkGoogleAuthStatus = async () => {
       try {
@@ -62,11 +58,9 @@ const Login = () => {
           const user = JSON.parse(decodeURIComponent(userStr));
           localStorage.setItem('token', token);
           localStorage.setItem('user', JSON.stringify(user));
-          toast.success('Inicio de sesión con Google exitoso');
           navigate('/dashboard');
         } catch (error) {
           console.error('Error al procesar respuesta de Google:', error);
-          toast.error('Error al procesar respuesta de Google');
           navigate('/login');
         }
       }
@@ -86,7 +80,6 @@ const Login = () => {
     try {
       // Enviar el token del captcha junto con las credenciales
       await login(values.email, values.password, captchaToken);
-      toast.success('Inicio de sesión exitoso');
       navigate('/');
     } catch (error) {
       console.error('Error al iniciar sesión:', error);

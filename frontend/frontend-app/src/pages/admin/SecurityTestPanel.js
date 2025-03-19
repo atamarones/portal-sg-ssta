@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { runSecurityTests, testRateLimiting, testXSSProtection } from '../../utils/securityTest';
+import { Container, Card, Button, Form, Alert, Spinner, Table, Badge } from 'react-bootstrap';
 import { toast } from 'react-hot-toast';
-import '../../styles/admin.css';
+import securityTestUtils from '../../utils/securityTest';
 
+/**
+ * Panel de administración para probar las medidas de seguridad implementadas
+ */
 const SecurityTestPanel = () => {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
@@ -15,154 +18,191 @@ const SecurityTestPanel = () => {
     try {
       let testResults;
       
-      switch(testType) {
-        case 'rateLimiting':
-          testResults = { rateLimiting: await testRateLimiting() };
+      // Ejecutar las pruebas según la selección
+      switch (testType) {
+        case 'rateLimit':
+          testResults = { rateLimiting: await securityTestUtils.testRateLimiting() };
           break;
         case 'xss':
-          testResults = { xssProtection: await testXSSProtection() };
+          testResults = { xssProtection: await securityTestUtils.testXssProtection() };
           break;
         case 'all':
         default:
-          testResults = await runSecurityTests();
+          testResults = await securityTestUtils.runAllSecurityTests();
           break;
       }
       
       setResults(testResults);
-      toast.success('Pruebas de seguridad completadas');
+      toast.success('Pruebas completadas');
     } catch (error) {
-      console.error('Error al ejecutar pruebas de seguridad:', error);
-      toast.error('Error al ejecutar pruebas de seguridad');
+      console.error('Error al ejecutar las pruebas:', error);
+      toast.error('Error al ejecutar las pruebas: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderResultTable = (test, data) => {
-    if (!data || !data.results) return null;
-    
-    return (
-      <div className="test-results">
-        <h3>{test} - Resultado: {data.success ? '✅ PASADO' : '❌ FALLIDO'}</h3>
-        
-        {Array.isArray(data.results) && (
-          <table className="results-table">
+  // Renderiza una tabla con los resultados de las pruebas
+  const renderResultTable = (testResult) => {
+    if (!testResult) return null;
+
+    // Para resultados de Rate Limiting
+    if (testResult.name === 'Prueba de Límite de Tasa (Rate Limiting)' && testResult.attempts) {
+      return (
+        <div className="mb-4">
+          <h5>
+            {testResult.name} 
+            <Badge 
+              className="ms-2" 
+              bg={testResult.passed ? 'success' : 'danger'}
+            >
+              {testResult.passed ? 'PASÓ' : 'FALLÓ'}
+            </Badge>
+          </h5>
+          
+          {testResult.message && (
+            <Alert variant={testResult.passed ? 'success' : 'warning'}>
+              {testResult.message}
+            </Alert>
+          )}
+          
+          <Table striped bordered hover size="sm">
             <thead>
               <tr>
-                {Object.keys(data.results[0] || {}).map(key => (
-                  <th key={key}>{key}</th>
-                ))}
+                <th>#</th>
+                <th>Estado</th>
+                <th>Mensaje</th>
               </tr>
             </thead>
             <tbody>
-              {data.results.map((result, index) => (
+              {testResult.attempts.map((attempt, index) => (
                 <tr key={index}>
-                  {Object.values(result).map((value, idx) => (
-                    <td key={idx}>{value.toString()}</td>
-                  ))}
+                  <td>{attempt.attempt}</td>
+                  <td>{attempt.status}</td>
+                  <td>{attempt.message}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        )}
-        
-        {data.message && (
-          <div className="test-message">
-            <p><strong>Mensaje:</strong> {data.message}</p>
-          </div>
-        )}
+          </Table>
+        </div>
+      );
+    }
+
+    // Para resultados de prueba XSS
+    if (testResult.name === 'Prueba de Protección XSS') {
+      return (
+        <div className="mb-4">
+          <h5>
+            {testResult.name}
+            <Badge 
+              className="ms-2" 
+              bg={testResult.passed ? 'success' : 'danger'}
+            >
+              {testResult.passed ? 'PASÓ' : 'FALLÓ'}
+            </Badge>
+          </h5>
+          
+          {testResult.message && (
+            <Alert variant={testResult.passed ? 'success' : 'warning'}>
+              {testResult.message}
+            </Alert>
+          )}
+          
+          <Table striped bordered hover size="sm">
+            <thead>
+              <tr>
+                <th>Payload Original</th>
+                <th>Payload Sanitizado</th>
+                <th>Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>{testResult.originalPayload}</code></td>
+                <td><code>{testResult.sanitizedPayload || 'N/A'}</code></td>
+                <td>{testResult.passed ? '✅ Sanitizado' : '❌ No sanitizado'}</td>
+              </tr>
+            </tbody>
+          </Table>
+        </div>
+      );
+    }
+
+    // Para otros tipos de resultados
+    return (
+      <div className="mb-4">
+        <h5>{testResult.name || 'Resultado de prueba'}</h5>
+        <pre>{JSON.stringify(testResult, null, 2)}</pre>
       </div>
     );
   };
 
   return (
-    <div className="admin-container">
-      <div className="admin-header">
-        <h1>Panel de Pruebas de Seguridad</h1>
-        <p>Este panel permite probar las diferentes medidas de seguridad implementadas en la aplicación.</p>
-      </div>
-
-      <div className="admin-content">
-        <div className="card">
-          <div className="card-header">
-            <h2>Ejecutar Pruebas</h2>
+    <Container className="py-4">
+      <Card className="shadow-sm">
+        <Card.Header as="h4" className="bg-primary text-white">
+          Panel de Pruebas de Seguridad
+        </Card.Header>
+        <Card.Body>
+          <div className="mb-4">
+            <p className="lead">
+              Utilice este panel para probar las medidas de seguridad implementadas en la aplicación.
+            </p>
+            
+            <Alert variant="info">
+              <Alert.Heading>Medidas de seguridad implementadas:</Alert.Heading>
+              <ul>
+                <li><strong>Protección XSS</strong> - Sanitización de entradas de usuario para prevenir ataques de Cross-Site Scripting.</li>
+                <li><strong>Rate Limiting</strong> - Limitación de intentos de inicio de sesión y otras operaciones sensibles.</li>
+                <li><strong>Helmet</strong> - Encabezados HTTP de seguridad para proteger contra varios tipos de ataques.</li>
+                <li><strong>Validación de Entrada</strong> - Verificación de todas las entradas de usuario antes de procesarlas.</li>
+                <li><strong>Cookies Seguras</strong> - Configuración de cookies con flags HttpOnly, Secure y SameSite.</li>
+              </ul>
+            </Alert>
           </div>
-          <div className="card-body">
-            <div className="form-group">
-              <label htmlFor="testType">Tipo de Prueba:</label>
-              <select 
-                id="testType" 
-                value={testType} 
+
+          <Form className="mb-4">
+            <Form.Group className="mb-3">
+              <Form.Label>Seleccione la prueba a ejecutar:</Form.Label>
+              <Form.Select 
+                value={testType}
                 onChange={(e) => setTestType(e.target.value)}
-                className="form-control"
+                disabled={loading}
               >
                 <option value="all">Todas las pruebas</option>
-                <option value="rateLimiting">Límite de intentos (Rate Limiting)</option>
-                <option value="xss">Protección contra XSS</option>
-              </select>
-            </div>
+                <option value="rateLimit">Prueba de Rate Limiting</option>
+                <option value="xss">Prueba de Protección XSS</option>
+              </Form.Select>
+            </Form.Group>
 
-            <button 
-              className="btn-primary" 
+            <Button 
+              variant="primary" 
               onClick={handleRunTests}
               disabled={loading}
+              className="d-flex align-items-center"
             >
-              {loading ? 'Ejecutando...' : 'Ejecutar Pruebas de Seguridad'}
-            </button>
+              {loading && <Spinner size="sm" animation="border" className="me-2" />}
+              {loading ? 'Ejecutando pruebas...' : 'Ejecutar Pruebas'}
+            </Button>
+          </Form>
 
-            {loading && (
-              <div className="loading-spinner">
-                <div className="spinner"></div>
-                <p>Ejecutando pruebas de seguridad...</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {results && (
-          <div className="card mt-4">
-            <div className="card-header">
-              <h2>Resultados de las Pruebas</h2>
+          {results && (
+            <div className="results-container">
+              <h4 className="mb-3">Resultados de las Pruebas:</h4>
+              
+              {results.rateLimiting && renderResultTable(results.rateLimiting)}
+              {results.xssProtection && renderResultTable(results.xssProtection)}
+              
+              {!results.rateLimiting && !results.xssProtection && (
+                <Alert variant="warning">
+                  No se obtuvieron resultados de las pruebas.
+                </Alert>
+              )}
             </div>
-            <div className="card-body">
-              {results.rateLimiting && renderResultTable('Límite de Intentos', results.rateLimiting)}
-              {results.xssProtection && renderResultTable('Protección XSS', results.xssProtection)}
-            </div>
-          </div>
-        )}
-
-        <div className="card mt-4">
-          <div className="card-header">
-            <h2>Información de Seguridad Implementada</h2>
-          </div>
-          <div className="card-body">
-            <h3>1. Google reCAPTCHA</h3>
-            <p>Implementado en los formularios de login y registro para verificar que los usuarios son humanos.</p>
-            
-            <h3>2. Límite de intentos de inicio de sesión</h3>
-            <p>Se limitan los intentos fallidos de inicio de sesión por dirección IP, bloqueando temporalmente el acceso después de 5 intentos fallidos.</p>
-            
-            <h3>3. Validación de contraseñas seguras</h3>
-            <p>Las contraseñas deben cumplir requisitos de seguridad como longitud mínima, mayúsculas, minúsculas, números y caracteres especiales.</p>
-            
-            <h3>4. Protección contra XSS</h3>
-            <p>Saneamiento de entrada de datos para prevenir ataques de Cross-Site Scripting.</p>
-            
-            <h3>5. Protección contra CSRF</h3>
-            <p>Uso de tokens para validar que las solicitudes provienen de tu sitio.</p>
-            
-            <h3>6. Rate Limiting</h3>
-            <p>Restricciones en el número de solicitudes a la API para evitar ataques de fuerza bruta.</p>
-            
-            <h3>7. Encabezados de seguridad</h3>
-            <p>Implementación de Helmet para establecer varios encabezados HTTP de seguridad.</p>
-            
-            <h3>8. Manejo seguro de cookies</h3>
-            <p>Configuración de cookies seguras con las opciones HttpOnly, Secure y SameSite.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+          )}
+        </Card.Body>
+      </Card>
+    </Container>
   );
 };
 

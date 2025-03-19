@@ -3,7 +3,7 @@ import { toast } from 'react-hot-toast';
 
 // Crear una instancia de axios con la URL base del backend
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
   withCredentials: true, // Habilitar envío de cookies de sesión
   headers: {
     'Content-Type': 'application/json',

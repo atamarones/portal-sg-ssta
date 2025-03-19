@@ -22,12 +22,12 @@ const ForgotPassword = () => {
     try {
       await api.post('/auth/password-reset-request', values);
       setEmailSent(true);
-      toast.success('Se ha enviado un enlace de recuperación a tu correo electrónico');
     } catch (error) {
-      const errorMessage = 
-        error.response?.data?.message || 'Error al solicitar recuperación de contraseña';
-      toast.error(errorMessage);
-      setErrors({ general: errorMessage });
+      console.error('Error al solicitar recuperación:', error);
+      setErrors({ 
+        general: error.response?.data?.message || 
+        'Error al solicitar recuperación de contraseña. Por favor, intenta nuevamente.'
+      });
     } finally {
       setIsLoading(false);
       setSubmitting(false);

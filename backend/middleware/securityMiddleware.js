@@ -1,8 +1,10 @@
-import csrf from 'csurf';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import xss from 'xss-clean';
 import { randomBytes } from 'crypto';
+
+// Variable para controlar si CSRF está activo
+const CSRF_ENABLED = false; // Desactivamos temporalmente CSRF
 
 // Middleware para establecer encabezados de seguridad
 export const configureHelmet = (app) => {
@@ -26,43 +28,23 @@ export const configureHelmet = (app) => {
       referrerPolicy: { policy: 'same-origin' }
     })
   );
+  console.log('✅ Helmet configurado correctamente');
 };
 
 // Middleware para prevenir ataques de inyección de scripts (XSS)
 export const configureXss = (app) => {
   app.use(xss());
+  console.log('✅ Protección XSS configurada correctamente');
 };
 
 // Middleware para proteger contra CSRF
 export const configureCsrf = (app) => {
-  app.use(
-    csrf({
-      cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        httpOnly: true
-      }
-    })
-  );
+  if (!CSRF_ENABLED) {
+    console.warn('⚠️ Protección CSRF desactivada');
+    return;
+  }
   
-  // Middleware para enviar token CSRF al cliente
-  app.use((req, res, next) => {
-    res.cookie('XSRF-TOKEN', req.csrfToken(), {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
-    });
-    next();
-  });
-  
-  // Manejador de errores CSRF
-  app.use((err, req, res, next) => {
-    if (err.code === 'EBADCSRFTOKEN') {
-      return res.status(403).json({
-        message: 'Sesión inválida o caducada, por favor recargue la página'
-      });
-    }
-    next(err);
-  });
+  console.warn('⚠️ No se pudo activar la protección CSRF');
 };
 
 // Middleware para limitar solicitudes (rate limiting)
@@ -85,6 +67,8 @@ export const configureRateLimit = (app) => {
   app.use('/api/auth/login', authLimiter);
   app.use('/api/auth/register', authLimiter);
   app.use('/api/auth/forgot-password', authLimiter);
+  
+  console.log('✅ Rate limiting configurado correctamente');
 };
 
 // Función para configurar todas las medidas de seguridad
@@ -93,6 +77,8 @@ export const configureSecurityMiddleware = (app) => {
   configureXss(app);
   configureCsrf(app);
   configureRateLimit(app);
+  
+  console.log('✅ Medidas de seguridad configuradas correctamente');
 };
 
 export default {

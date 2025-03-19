@@ -3,13 +3,16 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-hot-toast';
 import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaEdit, FaSave } from 'react-icons/fa';
-import api from '../api/api';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/profile.css';
 
 const profileSchema = Yup.object().shape({
-  name: Yup.string()
+  firstName: Yup.string()
     .required('El nombre es obligatorio')
-    .min(3, 'El nombre debe tener al menos 3 caracteres'),
+    .min(2, 'El nombre debe tener al menos 2 caracteres'),
+  lastName: Yup.string()
+    .required('El apellido es obligatorio')
+    .min(2, 'El apellido debe tener al menos 2 caracteres'),
   email: Yup.string()
     .email('Correo electrónico inválido')
     .required('El correo electrónico es obligatorio'),
@@ -27,7 +30,7 @@ const passwordSchema = Yup.object().shape({
 });
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
+  const { user, updateProfile, changePassword } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState({
@@ -38,38 +41,13 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('profile');
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await api.get('/auth/profile', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUser(response.data);
-      } catch (error) {
-        toast.error('Error al cargar perfil de usuario');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserProfile();
+    setIsLoading(false);
   }, []);
 
   const handleUpdateProfile = async (values, { setSubmitting, setErrors }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await api.put('/auth/profile', values, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Actualizamos el usuario en localStorage
-      const currentUser = JSON.parse(localStorage.getItem('user'));
-      const updatedUser = { ...currentUser, ...response.data.user };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
-      setUser(response.data.user);
+      await updateProfile(values);
       setIsEditing(false);
-      toast.success('Perfil actualizado correctamente');
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Error al actualizar perfil';
       toast.error(errorMessage);
@@ -81,13 +59,8 @@ const Profile = () => {
 
   const handleChangePassword = async (values, { setSubmitting, setErrors, resetForm }) => {
     try {
-      const token = localStorage.getItem('token');
-      await api.put('/auth/change-password', values, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      await changePassword(values.currentPassword, values.newPassword);
       resetForm();
-      toast.success('Contraseña actualizada correctamente');
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Error al cambiar contraseña';
       toast.error(errorMessage);
@@ -156,8 +129,9 @@ const Profile = () => {
 
             <Formik
               initialValues={{
-                name: user.name,
-                email: user.email,
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.email || '',
               }}
               validationSchema={profileSchema}
               onSubmit={handleUpdateProfile}
@@ -170,18 +144,33 @@ const Profile = () => {
                   )}
 
                   <div className="form-group">
-                    <label htmlFor="name">Nombre completo</label>
+                    <label htmlFor="firstName">Nombre</label>
                     <div className="input-with-icon">
                       <FaUser className="input-icon" />
                       <Field
                         type="text"
-                        name="name"
-                        id="name"
+                        name="firstName"
+                        id="firstName"
                         disabled={!isEditing}
-                        className={`form-control ${errors.name && touched.name ? 'is-invalid' : ''}`}
+                        className={`form-control ${errors.firstName && touched.firstName ? 'is-invalid' : ''}`}
                       />
                     </div>
-                    <ErrorMessage name="name" component="div" className="error-message" />
+                    <ErrorMessage name="firstName" component="div" className="error-message" />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="lastName">Apellido</label>
+                    <div className="input-with-icon">
+                      <FaUser className="input-icon" />
+                      <Field
+                        type="text"
+                        name="lastName"
+                        id="lastName"
+                        disabled={!isEditing}
+                        className={`form-control ${errors.lastName && touched.lastName ? 'is-invalid' : ''}`}
+                      />
+                    </div>
+                    <ErrorMessage name="lastName" component="div" className="error-message" />
                   </div>
 
                   <div className="form-group">
